@@ -7,14 +7,14 @@
 
 namespace mpi {
 
-class enviroment{
+class environment{
 public:
-    enviroment(int argc, char **argv)
+    environment(int argc, char **argv)
     {
         MPI_Init(&argc, &argv);
     }
 
-    ~enviroment()
+    ~environment()
     {
         MPI_Finalize();
     }
@@ -37,7 +37,7 @@ public:
     int size() const
     {
         static thread_local int size = -1;
-        if(size != -1)
+        if(size == -1)
         {
             MPI_Comm_size(m_comm, &size);
         }
@@ -151,7 +151,65 @@ public:
         return recv<char>(str.data(), str.size(), src, tag);
     }
 
+
+    template <typename T>
+    void scatter(const T* send_data, T *recv_data, int count, int root)
+    {
+        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        static constexpr auto mpi_type = mpi_type_map<T>::type;
+        MPI_Scatter(send_data, count, mpi_type, recv_data, count, mpi_type, root, m_comm);
+    }
+
+    template <typename T>
+    void scatter(const T* send_data, T &recv_data, int root)
+    {
+        scatter<T>(send_data, &recv_data, 1, root);
+    }
     
+    // for non-root process, send_data is not needed.
+    template <typename T>
+    void scatter(T &recv_data, int root)
+    {
+        scatter<T>(nullptr, &recv_data, 1, root);
+    }
+
+
+    template <typename T>
+    void gather(const T* send_data, T *recv_data, int count, int root)
+    {
+        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        static constexpr auto mpi_type = mpi_type_map<T>::type;
+        MPI_Gather(send_data, count, mpi_type, recv_data, count, mpi_type, root, m_comm);
+    }
+
+    template <typename T>
+    void gather(const T send_data, T *recv_data, int root)
+    {
+        gather<T>(&send_data, recv_data, 1, root);
+    }
+
+    // for non-root process, recv_data is not needed.
+    template <typename T>
+    void gather(const T send_data, int root)
+    {
+        gather<T>(&send_data, nullptr, 1, root);
+    }
+
+    template <typename T>
+    void allgather(const T* send_data, T *recv_data, int count)
+    {
+        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        static constexpr auto mpi_type = mpi_type_map<T>::type;
+        MPI_Allgather(send_data, count, mpi_type, recv_data, count, mpi_type, m_comm);
+    }
+
+    template <typename T>
+    void allgather(const T send_data, T *recv_data)
+    {
+        allgather<T>(&send_data, recv_data, 1);
+    }
+
+
 private:
     MPI_Comm m_comm;
 };

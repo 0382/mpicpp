@@ -92,6 +92,7 @@ class Logger
     void write_log(LogLevel level, Args &&...args) const
     {
         using namespace std::chrono_literals;
+        static const auto rank_length = std::to_string(world.size()).size();
         if (static_cast<int>(level) > static_cast<int>(m_log_level))
             return;
         auto now_time = MPI_Wtime();
@@ -101,6 +102,7 @@ class Logger
         auto minutes = std::chrono::floor<std::chrono::minutes>(dura).count() % 60;
         auto seconds = std::chrono::floor<std::chrono::seconds>(dura).count() % 60;
         oss << '[';
+        oss << std::setw(rank_length) << world.rank() << '-';
         oss << std::setw(2) << std::setfill('0') << hours << ':';
         oss << std::setw(2) << std::setfill('0') << minutes << ':';
         oss << std::setw(2) << std::setfill('0') << seconds << "] ";

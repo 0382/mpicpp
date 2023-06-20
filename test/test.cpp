@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[])
 {
-    mpi::enviroment env(argc, argv);
+    mpi::environment env(argc, argv);
     mpi::log_init(mpi::LogLevel::Info);
     std::vector<int> x;
 
@@ -53,6 +53,17 @@ int main(int argc, char *argv[])
     if (mpi::world.rank() == 1)
     {
         mpi::log_info("gs = ", gs);
+    }
+
+    int arr[4];
+    if(mpi::world.rank() == 0)
+    {
+        mpi::world.gather(mpi::world.rank(), arr, 0);
+        mpi::log_info(arr[0], ",", arr[1], ",", arr[2], ",", arr[3]);
+    }
+    else
+    {
+        mpi::world.gather(mpi::world.rank(), 0);
     }
     return 0;
 }

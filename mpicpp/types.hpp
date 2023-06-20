@@ -2,7 +2,7 @@
 #ifndef MPI_TYPES_HPP
 #define MPI_TYPES_HPP
 
-#include <mpi.h>
+#include <openmpi/mpi.h>
 
 namespace mpi
 {
