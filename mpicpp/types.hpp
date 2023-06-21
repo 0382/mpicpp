@@ -3,6 +3,7 @@
 #define MPI_TYPES_HPP
 
 #include <openmpi/mpi.h>
+#include <algorithm>
 
 namespace mpi
 {
@@ -102,6 +103,32 @@ struct mpi_type_map<long double>
 {
     static constexpr bool supported = true;
     static constexpr MPI_Datatype type = MPI_LONG_DOUBLE;
+};
+
+// TODO: not good, maybe a better implementation.
+template <typename T>
+struct op
+{
+    static MPI_Op max(){return MPI_MAX;}
+    static MPI_Op min(){return MPI_MIN;}
+
+    template <typename Func>
+    static MPI_Op custom(bool commute)
+    {
+        MPI_Op op;
+        MPI_Op_create(&func<Func>, commute, &op);
+        return op;
+    }
+
+private:
+    template <typename Func>
+    static void func(void *invec, void *inoutvec, int *len, MPI_Datatype *datatype)
+    {
+        T *in = static_cast<T*>(invec);
+        T *out = static_cast<T*>(inoutvec);
+        Func func;
+        std::transform(in, in + *len, out, out, func);
+    }
 };
 
 } // end namespace mpi

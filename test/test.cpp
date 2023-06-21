@@ -4,66 +4,61 @@
 #include <numeric>
 #include <thread>
 
+struct add_int
+{
+    int operator()(int a, int b)
+    {
+        return a + b;
+    }
+};
+
 int main(int argc, char *argv[])
 {
     mpi::environment env(argc, argv);
     mpi::log_init(mpi::LogLevel::Info);
-    std::vector<int> x;
 
-    std::string gs;
-    if (mpi::world.rank() == 0)
+    using mpi::world;
+
+    std::string s;
+    if(world.rank() == 0)
     {
-        x.resize(10);
-        std::iota(x.begin(), x.end(), 1);
-        mpi::world.send(x, 1, 0);
-
-        std::string s = "Hello world!";
-        mpi::world.send(s, 1, 100);
-
-        gs = "你好世界";
+        s = "Hello mpicpp";
+        world.send(s, 1, 0);
+        mpi::log_info("send `s` from rank ", world.rank());
     }
-    else if (mpi::world.rank() == 1)
+    else if(world.rank() == 1)
     {
-        mpi::world.recv(x, 0, 0);
-
-        std::thread th[10];
-        for (int i = 0; i < 10; ++i)
-        {
-            th[i] = std::thread(
-                [i, &x]()
-                {
-                    for (int j = 0; j < i; ++j)
-                    {
-                        std::this_thread::sleep_for(std::chrono::seconds(1));
-                        mpi::log_info("thread ", i, ", v = ", x[i]);
-                    }
-                });
-        }
-        for (int i = 0; i < 10; ++i)
-        {
-            th[i].join();
-        }
-
-        std::string s;
-        mpi::world.recv(s, 0, 100);
-
-        mpi::log_info("s = ", s);
-    }
-    mpi::world.broadcast(gs, 0);
-    if (mpi::world.rank() == 1)
-    {
-        mpi::log_info("gs = ", gs);
+        world.recv(s, 0, 0);
+        mpi::log_info("recv `s` to rank ", world.rank(), ", s = ", s);
     }
 
-    int arr[4];
-    if(mpi::world.rank() == 0)
+
+    std::vector<int> x(world.size(), 0);
+    if(world.rank() == 0)
     {
-        mpi::world.gather(mpi::world.rank(), arr, 0);
-        mpi::log_info(arr[0], ",", arr[1], ",", arr[2], ",", arr[3]);
+        world.gather(world.rank(), x.data(), 0);
+        mpi::log_info("gather to rank ", world.rank(), ", sum of rank = ", std::accumulate(x.begin(), x.end(), 0));
     }
     else
     {
-        mpi::world.gather(mpi::world.rank(), 0);
+        world.gather(world.rank(), 0);
+        mpi::log_info("send to gather from rank ", world.rank());
+    }
+
+    int sum;
+    world.allreduce(world.rank(), sum, MPI_SUM);
+    mpi::log_info("sum = ", sum);
+
+    if(world.rank() == 0)
+    {
+        int x = 0;
+        // 仅支持仿函数类型
+        world.reduce(world.rank(), x, mpi::op<int>::custom<add_int>(true), 0);
+        mpi::log_info("x = ", x);
+    }
+    else
+    {
+        world.reduce(world.rank(), mpi::op<int>::custom<add_int>(true), 0);
     }
     return 0;
 }

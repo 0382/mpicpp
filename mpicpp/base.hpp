@@ -209,6 +209,40 @@ public:
         allgather<T>(&send_data, recv_data, 1);
     }
 
+    template <typename T>
+    void reduce(const T *send_data, T* recv_data, int count, MPI_Op op, int root)
+    {
+        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        static constexpr auto mpi_type = mpi_type_map<T>::type;
+        MPI_Reduce(send_data, recv_data, count, mpi_type, op, root, m_comm);
+    }
+
+    template <typename T>
+    void reduce(const T send_data, T& recv_data, MPI_Op op, int root)
+    {
+        reduce<T>(&send_data, &recv_data, 1, op, root);
+    }
+
+    template <typename T>
+    void reduce(const T send_data, MPI_Op op, int root)
+    {
+        reduce<T>(&send_data, nullptr, 1, op, root);
+    }
+
+    template <typename T>
+    void allreduce(const T *send_data, T* recv_data, int count, MPI_Op op)
+    {
+        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        static constexpr auto mpi_type = mpi_type_map<T>::type;
+        MPI_Allreduce(send_data, recv_data, count, mpi_type, op, m_comm);
+    }
+
+    template <typename T>
+    void allreduce(const T send_data, T& recv_data, MPI_Op op)
+    {
+        allreduce<T>(&send_data, &recv_data, 1, op);
+    }
+
 
 private:
     MPI_Comm m_comm;
