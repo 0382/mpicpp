@@ -2,8 +2,9 @@
 #ifndef MPI_TYPES_HPP
 #define MPI_TYPES_HPP
 
-#include <openmpi/mpi.h>
 #include <algorithm>
+#include <openmpi/mpi.h>
+#include <type_traits>
 
 namespace mpi
 {
@@ -106,26 +107,38 @@ struct mpi_type_map<long double>
 };
 
 // TODO: not good, maybe a better implementation.
-template <typename T>
 struct op
 {
-    static MPI_Op max(){return MPI_MAX;}
-    static MPI_Op min(){return MPI_MIN;}
+    static MPI_Op null() { return MPI_OP_NULL; }
+    static MPI_Op max() { return MPI_MAX; }
+    static MPI_Op min() { return MPI_MIN; }
+    static MPI_Op sum() { return MPI_SUM; }
+    static MPI_Op prod() { return MPI_PROD; }
+    static MPI_Op land() { return MPI_LAND; }
+    static MPI_Op lor() { return MPI_LOR; }
+    static MPI_Op lxor() { return MPI_LXOR; }
+    static MPI_Op band() { return MPI_BAND; }
+    static MPI_Op bor() { return MPI_BOR; }
+    static MPI_Op bxor() { return MPI_BXOR; }
+    static MPI_Op minloc() { return MPI_MINLOC; }
+    static MPI_Op maxloc() { return MPI_MAXLOC; }
+    static MPI_Op replace() { return MPI_REPLACE; }
 
-    template <typename Func>
+    template <typename T, typename Func>
     static MPI_Op custom(bool commute)
     {
+        static_assert(std::is_invocable<Func, T, T>::value, "Func must be T(T,T)");
         MPI_Op op;
-        MPI_Op_create(&func<Func>, commute, &op);
+        MPI_Op_create(&func<T, Func>, commute, &op);
         return op;
     }
 
-private:
-    template <typename Func>
+  private:
+    template <typename T, typename Func>
     static void func(void *invec, void *inoutvec, int *len, MPI_Datatype *datatype)
     {
-        T *in = static_cast<T*>(invec);
-        T *out = static_cast<T*>(inoutvec);
+        T *in = static_cast<T *>(invec);
+        T *out = static_cast<T *>(inoutvec);
         Func func;
         std::transform(in, in + *len, out, out, func);
     }

@@ -5,30 +5,25 @@
 #include "types.hpp"
 #include <vector>
 
-namespace mpi {
+namespace mpi
+{
 
-class environment{
-public:
-    environment(int argc, char **argv)
-    {
-        MPI_Init(&argc, &argv);
-    }
+class environment
+{
+  public:
+    environment(int argc, char **argv) { MPI_Init(&argc, &argv); }
 
-    ~environment()
-    {
-        MPI_Finalize();
-    }
+    ~environment() { MPI_Finalize(); }
 };
-
 
 class communicator
 {
-public:
-    communicator(MPI_Comm comm) : m_comm(comm) {
-    }
-    int rank() const {
+  public:
+    communicator(MPI_Comm comm) : m_comm(comm) {}
+    int rank() const
+    {
         static thread_local int rank = -1;
-        if(rank == -1)
+        if (rank == -1)
         {
             MPI_Comm_rank(m_comm, &rank);
         }
@@ -37,7 +32,7 @@ public:
     int size() const
     {
         static thread_local int size = -1;
-        if(size == -1)
+        if (size == -1)
         {
             MPI_Comm_size(m_comm, &size);
         }
@@ -77,7 +72,6 @@ public:
         MPI_Bcast(buf, count, mpi_type_map<T>::type, root, m_comm);
     }
 
- 
     template <typename T>
     void broadcast(T &buf, int root) const
     {
@@ -88,12 +82,12 @@ public:
     void broadcast(std::vector<T> &data, int root) const
     {
         std::size_t size;
-        if(rank() == root)
+        if (rank() == root)
         {
             size = data.size();
         }
         broadcast<std::size_t>(size, root);
-        if(rank() != root)
+        if (rank() != root)
         {
             data.resize(size);
         }
@@ -103,12 +97,12 @@ public:
     void broadcast(std::string &str, int root) const
     {
         std::size_t size;
-        if(rank() == root)
+        if (rank() == root)
         {
             size = str.size();
         }
         broadcast<std::size_t>(size, root);
-        if(rank() != root)
+        if (rank() != root)
         {
             str.resize(size);
         }
@@ -135,7 +129,7 @@ public:
     {
         std::size_t size;
         MPI_Status st = recv<std::size_t>(size, src, tag);
-        if(st.MPI_ERROR != MPI_SUCCESS)
+        if (st.MPI_ERROR != MPI_SUCCESS)
             return st;
         data.resize(size);
         return recv<T>(data.data(), data.size(), src, tag);
@@ -145,15 +139,14 @@ public:
     {
         std::size_t size;
         MPI_Status st = recv<std::size_t>(size, src, tag);
-        if(st.MPI_ERROR != MPI_SUCCESS)
+        if (st.MPI_ERROR != MPI_SUCCESS)
             return st;
         str.resize(size);
         return recv<char>(str.data(), str.size(), src, tag);
     }
 
-
     template <typename T>
-    void scatter(const T* send_data, T *recv_data, int count, int root)
+    void scatter(const T *send_data, T *recv_data, int count, int root)
     {
         static_assert(mpi_type_map<T>::supported, "current type is not supported");
         static constexpr auto mpi_type = mpi_type_map<T>::type;
@@ -161,11 +154,11 @@ public:
     }
 
     template <typename T>
-    void scatter(const T* send_data, T &recv_data, int root)
+    void scatter(const T *send_data, T &recv_data, int root)
     {
         scatter<T>(send_data, &recv_data, 1, root);
     }
-    
+
     // for non-root process, send_data is not needed.
     template <typename T>
     void scatter(T &recv_data, int root)
@@ -173,9 +166,8 @@ public:
         scatter<T>(nullptr, &recv_data, 1, root);
     }
 
-
     template <typename T>
-    void gather(const T* send_data, T *recv_data, int count, int root)
+    void gather(const T *send_data, T *recv_data, int count, int root)
     {
         static_assert(mpi_type_map<T>::supported, "current type is not supported");
         static constexpr auto mpi_type = mpi_type_map<T>::type;
@@ -196,7 +188,7 @@ public:
     }
 
     template <typename T>
-    void allgather(const T* send_data, T *recv_data, int count)
+    void allgather(const T *send_data, T *recv_data, int count)
     {
         static_assert(mpi_type_map<T>::supported, "current type is not supported");
         static constexpr auto mpi_type = mpi_type_map<T>::type;
@@ -210,7 +202,7 @@ public:
     }
 
     template <typename T>
-    void reduce(const T *send_data, T* recv_data, int count, MPI_Op op, int root)
+    void reduce(const T *send_data, T *recv_data, int count, MPI_Op op, int root)
     {
         static_assert(mpi_type_map<T>::supported, "current type is not supported");
         static constexpr auto mpi_type = mpi_type_map<T>::type;
@@ -218,7 +210,7 @@ public:
     }
 
     template <typename T>
-    void reduce(const T send_data, T& recv_data, MPI_Op op, int root)
+    void reduce(const T send_data, T &recv_data, MPI_Op op, int root)
     {
         reduce<T>(&send_data, &recv_data, 1, op, root);
     }
@@ -230,7 +222,7 @@ public:
     }
 
     template <typename T>
-    void allreduce(const T *send_data, T* recv_data, int count, MPI_Op op)
+    void allreduce(const T *send_data, T *recv_data, int count, MPI_Op op)
     {
         static_assert(mpi_type_map<T>::supported, "current type is not supported");
         static constexpr auto mpi_type = mpi_type_map<T>::type;
@@ -238,17 +230,14 @@ public:
     }
 
     template <typename T>
-    void allreduce(const T send_data, T& recv_data, MPI_Op op)
+    void allreduce(const T send_data, T &recv_data, MPI_Op op)
     {
         allreduce<T>(&send_data, &recv_data, 1, op);
     }
 
-
-private:
+  private:
     MPI_Comm m_comm;
 };
-
-
 
 inline communicator world(MPI_COMM_WORLD);
 
