@@ -52,5 +52,12 @@ int main(int argc, char *argv[])
     {
         world.reduce(world.rank(), mpi::op::custom<int, std::plus<int>>(true), 0);
     }
+
+    x.clear();
+    x.resize(world.size(), world.rank());
+    std::vector<int> y(world.size());
+    world.alltoall(x.data(), y.data());
+    int next_proc = (world.rank() + 1) % world.size();
+    mpi::log_info("recv ", y[next_proc], " from rank ", next_proc);
     return 0;
 }

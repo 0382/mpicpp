@@ -42,7 +42,7 @@ class communicator
     template <typename T>
     void send(const T *buf, int count, int dest, int tag) const
     {
-        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        check_type<T>();
         MPI_Send(buf, count, mpi_type_map<T>::type, dest, tag, m_comm);
     }
 
@@ -68,7 +68,7 @@ class communicator
     template <typename T>
     void broadcast(T *buf, int count, int root) const
     {
-        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        check_type<T>();
         MPI_Bcast(buf, count, mpi_type_map<T>::type, root, m_comm);
     }
 
@@ -112,7 +112,7 @@ class communicator
     template <typename T>
     MPI_Status recv(T *buf, int count, int src, int tag) const
     {
-        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        check_type<T>();
         MPI_Status st;
         MPI_Recv(buf, count, mpi_type_map<T>::type, src, tag, m_comm, &st);
         return st;
@@ -148,7 +148,7 @@ class communicator
     template <typename T>
     void scatter(const T *send_data, T *recv_data, int count, int root)
     {
-        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        check_type<T>();
         static constexpr auto mpi_type = mpi_type_map<T>::type;
         MPI_Scatter(send_data, count, mpi_type, recv_data, count, mpi_type, root, m_comm);
     }
@@ -169,7 +169,7 @@ class communicator
     template <typename T>
     void gather(const T *send_data, T *recv_data, int count, int root)
     {
-        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        check_type<T>();
         static constexpr auto mpi_type = mpi_type_map<T>::type;
         MPI_Gather(send_data, count, mpi_type, recv_data, count, mpi_type, root, m_comm);
     }
@@ -190,7 +190,7 @@ class communicator
     template <typename T>
     void allgather(const T *send_data, T *recv_data, int count)
     {
-        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        check_type<T>();
         static constexpr auto mpi_type = mpi_type_map<T>::type;
         MPI_Allgather(send_data, count, mpi_type, recv_data, count, mpi_type, m_comm);
     }
@@ -204,7 +204,7 @@ class communicator
     template <typename T>
     void reduce(const T *send_data, T *recv_data, int count, MPI_Op op, int root)
     {
-        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        check_type<T>();
         static constexpr auto mpi_type = mpi_type_map<T>::type;
         MPI_Reduce(send_data, recv_data, count, mpi_type, op, root, m_comm);
     }
@@ -224,7 +224,7 @@ class communicator
     template <typename T>
     void allreduce(const T *send_data, T *recv_data, int count, MPI_Op op)
     {
-        static_assert(mpi_type_map<T>::supported, "current type is not supported");
+        check_type<T>();
         static constexpr auto mpi_type = mpi_type_map<T>::type;
         MPI_Allreduce(send_data, recv_data, count, mpi_type, op, m_comm);
     }
@@ -233,6 +233,23 @@ class communicator
     void allreduce(const T send_data, T &recv_data, MPI_Op op)
     {
         allreduce<T>(&send_data, &recv_data, 1, op);
+    }
+
+    template <typename T>
+    void alltoall(const T *send_data, int send_count, T *recv_data, int recv_count)
+    {
+        check_type<T>();
+        static constexpr auto mpi_type = mpi_type_map<T>::type;
+        MPI_Alltoall(send_data, send_count, mpi_type, recv_data, recv_count, mpi_type, m_comm);
+    }
+
+    // 只发送一个的情况
+    template <typename T>
+    void alltoall(const T *send_data, T *recv_data)
+    {
+        check_type<T>();
+        static constexpr auto mpi_type = mpi_type_map<T>::type;
+        MPI_Alltoall(send_data, 1, mpi_type, recv_data, 1, mpi_type, m_comm);
     }
 
   private:

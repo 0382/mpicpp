@@ -106,6 +106,12 @@ struct mpi_type_map<long double>
     static constexpr MPI_Datatype type = MPI_LONG_DOUBLE;
 };
 
+template <typename T>
+inline constexpr void check_type()
+{
+    static_assert(mpi_type_map<T>::supported, "current type is not supported");
+}
+
 // TODO: not good, maybe a better implementation.
 struct op
 {
