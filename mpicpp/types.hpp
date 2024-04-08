@@ -3,113 +3,43 @@
 #define MPI_TYPES_HPP
 
 #include <algorithm>
-#include <openmpi/mpi.h>
+#include <cassert>
+#include <complex>
+#include <mpi.h>
 #include <type_traits>
 
 namespace mpi
 {
 
-template <typename T>
-struct mpi_type_map
-{
-    static constexpr bool supported = false;
-};
+// clang-format off
+template <typename T> const MPI_Datatype mpi_type() { return MPI_DATATYPE_NULL; }
+template <> const MPI_Datatype mpi_type<char>() { return MPI_CHAR; }
+template <> const MPI_Datatype mpi_type<unsigned char>() { return MPI_UNSIGNED_CHAR; }
+template <> const MPI_Datatype mpi_type<signed char>() { return MPI_SIGNED_CHAR; }
+template <> const MPI_Datatype mpi_type<short>() { return MPI_SHORT; }
+template <> const MPI_Datatype mpi_type<unsigned short>() { return MPI_UNSIGNED_SHORT; }
+template <> const MPI_Datatype mpi_type<int>() { return MPI_INT; }
+template <> const MPI_Datatype mpi_type<unsigned>() { return MPI_UNSIGNED; }
+template <> const MPI_Datatype mpi_type<long>() { return MPI_LONG; }
+template <> const MPI_Datatype mpi_type<unsigned long>() { return MPI_UNSIGNED_LONG; }
+template <> const MPI_Datatype mpi_type<long long>() { return MPI_LONG_LONG; }
+template <> const MPI_Datatype mpi_type<unsigned long long>() { return MPI_UNSIGNED_LONG_LONG; }
+template <> const MPI_Datatype mpi_type<float>() { return MPI_FLOAT; }
+template <> const MPI_Datatype mpi_type<double>() { return MPI_DOUBLE; }
+template <> const MPI_Datatype mpi_type<long double>() { return MPI_LONG_DOUBLE; }
 
-template <>
-struct mpi_type_map<char>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_CHAR;
-};
+template <> const MPI_Datatype mpi_type<bool>() { return MPI_CXX_BOOL; }
+template <> const MPI_Datatype mpi_type<std::complex<float>>() { return MPI_CXX_FLOAT_COMPLEX; }
+template <> const MPI_Datatype mpi_type<std::complex<double>>() { return MPI_CXX_COMPLEX; }
+template <> const MPI_Datatype mpi_type<std::complex<long double>>() { return MPI_CXX_LONG_DOUBLE_COMPLEX; }
 
-template <>
-struct mpi_type_map<unsigned char>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_UNSIGNED_CHAR;
-};
-
-template <>
-struct mpi_type_map<short>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_SHORT;
-};
-
-template <>
-struct mpi_type_map<unsigned short>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_UNSIGNED_SHORT;
-};
-
-template <>
-struct mpi_type_map<int>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_INT;
-};
-
-template <>
-struct mpi_type_map<unsigned int>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_UNSIGNED;
-};
-
-template <>
-struct mpi_type_map<long>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_LONG;
-};
-
-template <>
-struct mpi_type_map<unsigned long>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_UNSIGNED_LONG;
-};
-
-template <>
-struct mpi_type_map<long long>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_LONG_LONG;
-};
-
-template <>
-struct mpi_type_map<unsigned long long>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_UNSIGNED_LONG_LONG;
-};
-
-template <>
-struct mpi_type_map<float>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_FLOAT;
-};
-
-template <>
-struct mpi_type_map<double>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_DOUBLE;
-};
-
-template <>
-struct mpi_type_map<long double>
-{
-    static constexpr bool supported = true;
-    static constexpr MPI_Datatype type = MPI_LONG_DOUBLE;
-};
+template <> const MPI_Datatype mpi_type<std::byte>() { return MPI_BYTE; }
+// clang-format on
 
 template <typename T>
-inline constexpr void check_type()
+inline void check_type()
 {
-    static_assert(mpi_type_map<T>::supported, "current type is not supported");
+    assert(mpi_type<T>() != MPI_DATATYPE_NULL && "Unsupported type");
 }
 
 // TODO: not good, maybe a better implementation.

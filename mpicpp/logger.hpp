@@ -2,7 +2,7 @@
 #ifndef MPI_LOGGER_HPP
 #define MPI_LOGGER_HPP
 
-#include "base.hpp"
+#include "communicator.hpp"
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -50,7 +50,7 @@ class Logger
     void error_stop(Args &&...args) const
     {
         write_log(LogLevel::Error, std::forward<Args>(args)...);
-        std::exit(-1);
+        world.abort(-1);
     }
 
     template <typename... Args>
